@@ -16,7 +16,7 @@ struct PercentageRowView: View {
                     if dayColumns[index].isFuture {
                         Color.clear.frame(width: 44, height: 1)
                     } else {
-                        Text(String(format: "%.1f%%", columnPercentages[index]))
+                        Text(String(format: "%.0f%%", columnPercentages[index]))
                             .font(.system(.caption2, design: .monospaced))
                             .foregroundStyle(.secondary)
                             .frame(width: 44)

@@ -9,11 +9,15 @@ struct MatrixView: View {
         viewModel.selectedFrequency == .daily
     }
 
+    // Layout constants
+    private let labelWidth: CGFloat = 150
+    private let fractionWidth: CGFloat = 32
+    private let pctWidth: CGFloat = 30
+
     // Row height constants (must match between frozen labels and scrollable columns)
     private let headerHeight: CGFloat = 44
     private let summaryRowHeight: CGFloat = 20
     private let percentageRowHeight: CGFloat = 20
-    private let separatorHeight: CGFloat = 9 // 1pt line + 4pt padding top/bottom
     private let habitRowHeight: CGFloat = 48 // 44pt cell + 4pt vertical padding
     private let headerBottomPadding: CGFloat = 4
 
@@ -46,42 +50,42 @@ struct MatrixView: View {
                             // Header label
                             HStack(spacing: 0) {
                                 Text("")
-                                    .frame(width: 40)
+                                    .frame(width: fractionWidth)
                                 Text("%")
                                     .font(.system(.caption2, design: .monospaced))
                                     .foregroundStyle(.secondary)
-                                    .frame(width: 44, alignment: .trailing)
+                                    .frame(width: pctWidth, alignment: .trailing)
                                 Text("Habit")
                                     .font(.system(.caption2))
                                     .foregroundStyle(.secondary)
                                     .padding(.leading, 4)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .frame(width: 200, height: headerHeight)
+                            .frame(width: labelWidth, height: headerHeight)
                             .padding(.bottom, headerBottomPadding)
 
                             // Summary label
                             HStack(spacing: 0) {
                                 Text("")
-                                    .frame(width: 40)
+                                    .frame(width: fractionWidth)
                                 Text("")
-                                    .frame(width: 44)
+                                    .frame(width: pctWidth)
                                 Text("Total")
                                     .font(.system(.caption2))
                                     .foregroundStyle(.secondary)
                                     .padding(.leading, 4)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .frame(width: 200, height: summaryRowHeight)
+                            .frame(width: labelWidth, height: summaryRowHeight)
 
                             // Percentage label (blank)
                             Color.clear
-                                .frame(width: 200, height: percentageRowHeight)
+                                .frame(width: labelWidth, height: percentageRowHeight)
 
                             // Separator
                             Rectangle()
                                 .fill(Color.primary)
-                                .frame(width: 200, height: 1)
+                                .frame(width: labelWidth, height: 1)
                                 .padding(.vertical, 4)
 
                             // Habit labels
@@ -93,11 +97,11 @@ struct MatrixView: View {
                                         Text("\(overall.completed)/\(overall.total)")
                                             .font(.system(.caption2, design: .monospaced))
                                             .foregroundStyle(.secondary)
-                                            .frame(width: 40, alignment: .trailing)
-                                        Text(String(format: "%.1f%%", pct))
+                                            .frame(width: fractionWidth, alignment: .trailing)
+                                        Text(String(format: "%.0f%%", pct))
                                             .font(.system(.caption2, design: .monospaced))
                                             .foregroundStyle(.secondary)
-                                            .frame(width: 44, alignment: .trailing)
+                                            .frame(width: pctWidth, alignment: .trailing)
                                         Text(habit.name)
                                             .font(.subheadline)
                                             .lineLimit(1)
@@ -105,7 +109,7 @@ struct MatrixView: View {
                                             .padding(.leading, 4)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .frame(width: 200, height: habitRowHeight)
+                                    .frame(width: labelWidth, height: habitRowHeight)
                                     Divider()
                                 }
                             }
