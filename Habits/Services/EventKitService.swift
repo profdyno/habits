@@ -130,7 +130,15 @@ actor EventKitService {
         frequency: HabitFrequency
     ) async throws -> [String: Set<Date>] {
         let calendar = try findOrCreateHabitsList(for: frequency)
-        let predicate = store.predicateForReminders(in: [calendar])
+
+        // Use dedicated completed-reminders API (ending is exclusive)
+        let cal = Calendar.current
+        let endPlusOne = cal.date(byAdding: .day, value: 1, to: endDate)!
+        let predicate = store.predicateForCompletedReminders(
+            withCompletionDateStarting: startDate,
+            ending: endPlusOne,
+            calendars: [calendar]
+        )
 
         let reminders = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[EKReminder], Error>) in
             store.fetchReminders(matching: predicate) { result in
@@ -148,8 +156,7 @@ actor EventKitService {
         }
 
         for reminder in reminders {
-            guard reminder.isCompleted,
-                  let title = reminder.title,
+            guard let title = reminder.title,
                   habitNameSet.contains(title),
                   let completionDate = reminder.completionDate else { continue }
 

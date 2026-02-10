@@ -94,6 +94,9 @@ enum DateHelpers {
         let monthFormatter = DateFormatter()
         monthFormatter.dateFormat = "MMM"
 
+        let yearFormatter = DateFormatter()
+        yearFormatter.dateFormat = "''yy"
+
         var columns: [DayColumn] = []
         for i in stride(from: -(count - 1), through: 0, by: 1) {
             guard let firstOfMonth = cal.date(byAdding: .month, value: i, to: currentFirst) else { continue }
@@ -103,7 +106,7 @@ enum DateHelpers {
             columns.append(DayColumn(
                 id: startOfFirst,
                 label: monthFormatter.string(from: firstOfMonth),
-                dateLabel: "",
+                dateLabel: yearFormatter.string(from: firstOfMonth),
                 isToday: isCurrentMonth,
                 isFuture: isFuture
             ))

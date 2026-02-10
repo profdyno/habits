@@ -31,12 +31,14 @@ final class HabitsViewModel: ObservableObject {
 
     private let eventKitService = EventKitService()
     private var storeChangedCancellable: AnyCancellable?
+    private var refreshTimer: AnyCancellable?
 
     // MARK: - Init
 
     init() {
         dayColumns = computeColumnsForFrequency(.daily)
         listenForStoreChanges()
+        startPeriodicRefresh()
     }
 
     // MARK: - Permission
@@ -79,8 +81,7 @@ final class HabitsViewModel: ObservableObject {
     private func computeColumnsForFrequency(_ frequency: HabitFrequency) -> [DayColumn] {
         switch frequency {
         case .daily:
-            let weeks = UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
-            return DateHelpers.computeDayColumns(weeks: weeks)
+            return DateHelpers.computeDayColumns(weeks: 3)
         case .weekly:
             return DateHelpers.computeWeekColumns(count: 14)
         case .monthly:
@@ -269,18 +270,54 @@ final class HabitsViewModel: ObservableObject {
         HabitStore.saveOrder(filtered.map(\.name), for: selectedFrequency)
     }
 
-    // MARK: - Summary
+    // MARK: - Summary / Statistics
 
-    func completionCountForSummary(for habitName: String) -> Int {
-        let periods = Set(DateHelpers.lastPeriods(frequency: selectedFrequency, count: selectedFrequency.summaryPeriodCount))
-        guard let habitCompletions = completions[habitName] else { return 0 }
-        return habitCompletions.intersection(periods).count
+    /// Per-column completion counts: (completed habits, total habits) for each column.
+    var columnSummaries: [(completed: Int, total: Int)] {
+        let habits = filteredHabits
+        let total = habits.count
+        return dayColumns.map { column in
+            let completed = habits.filter { habit in
+                completions[habit.name]?.contains(column.id) == true
+            }.count
+            return (completed: completed, total: total)
+        }
     }
 
-    // MARK: - Refresh Day Columns (midnight rollover)
+    /// Per-column completion percentage.
+    var columnPercentages: [Double] {
+        columnSummaries.map { summary in
+            summary.total > 0 ? Double(summary.completed) / Double(summary.total) * 100.0 : 0.0
+        }
+    }
+
+    /// Overall completion for a habit across all non-future columns: (completed, total).
+    func habitOverallCompletion(for habitName: String) -> (completed: Int, total: Int) {
+        let nonFutureColumns = dayColumns.filter { !$0.isFuture }
+        let total = nonFutureColumns.count
+        let completed = nonFutureColumns.filter { column in
+            completions[habitName]?.contains(column.id) == true
+        }.count
+        return (completed: completed, total: total)
+    }
+
+    /// Overall percentage for a habit across all non-future columns.
+    func habitOverallPercentage(for habitName: String) -> Double {
+        let overall = habitOverallCompletion(for: habitName)
+        return overall.total > 0 ? Double(overall.completed) / Double(overall.total) * 100.0 : 0.0
+    }
+
+    // MARK: - Refresh
 
     func refreshDayColumns() {
         dayColumns = computeColumnsForFrequency(selectedFrequency)
+    }
+
+    /// Full refresh from Reminders — call when app returns to foreground.
+    func refreshFromReminders() async {
+        guard permissionStatus == .authorized else { return }
+        await loadHabitsFromReminders()
+        await loadCompletions()
     }
 
     // MARK: - Store Change Listener
@@ -293,6 +330,18 @@ final class HabitsViewModel: ObservableObject {
                 Task { @MainActor [weak self] in
                     await self?.loadHabitsFromReminders()
                     await self?.loadCompletions()
+                }
+            }
+    }
+
+    // MARK: - Periodic Refresh (cross-device sync)
+
+    private func startPeriodicRefresh() {
+        refreshTimer = Timer.publish(every: 30, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.refreshFromReminders()
                 }
             }
     }

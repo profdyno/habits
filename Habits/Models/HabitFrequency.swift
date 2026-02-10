@@ -21,11 +21,11 @@ enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var summaryPeriodCount: Int {
+    var columnCount: Int {
         switch self {
-        case .daily: return 7
-        case .weekly: return 4
-        case .monthly: return 3
+        case .daily: return 21
+        case .weekly: return 14
+        case .monthly: return 13
         }
     }
 }
