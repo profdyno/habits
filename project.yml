@@ -21,6 +21,7 @@ targets:
     sources:
       - path: Habits
     info:
+      path: Habits/Info.plist
       properties:
         NSRemindersFullAccessUsageDescription: "Habits uses Reminders to track your daily habit completions."
         UILaunchScreen: {}
