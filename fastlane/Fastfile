@@ -118,7 +118,8 @@ platform :ios do
           type: "appstore",
           api_key: api_key,
           git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
-          skip_confirmation: true
+          skip_confirmation: true,
+          readonly: false
         )
         match(
           type: "appstore",
