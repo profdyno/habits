@@ -8,7 +8,7 @@ struct HabitManagementView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Add Habit") {
+                Section("Add \(viewModel.selectedFrequency.displayName) Habit") {
                     HStack {
                         TextField("Habit name", text: $newHabitName)
                             .onSubmit { addHabit() }
@@ -21,9 +21,9 @@ struct HabitManagementView: View {
                     }
                 }
 
-                if !viewModel.habits.isEmpty {
-                    Section("Habits") {
-                        ForEach(viewModel.habits) { habit in
+                if !viewModel.filteredHabits.isEmpty {
+                    Section("\(viewModel.selectedFrequency.displayName) Habits") {
+                        ForEach(viewModel.filteredHabits) { habit in
                             Text(habit.name)
                         }
                         .onDelete { offsets in

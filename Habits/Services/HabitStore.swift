@@ -1,19 +1,15 @@
 import Foundation
 
 enum HabitStore {
-    private static let key = "habits_list"
-
-    static func loadHabits() -> [Habit] {
-        guard let data = UserDefaults.standard.data(forKey: key),
-              let habits = try? JSONDecoder().decode([Habit].self, from: data) else {
-            return []
-        }
-        return habits
+    private static func key(for frequency: HabitFrequency) -> String {
+        "habit_order_\(frequency.rawValue)"
     }
 
-    static func saveHabits(_ habits: [Habit]) {
-        if let data = try? JSONEncoder().encode(habits) {
-            UserDefaults.standard.set(data, forKey: key)
-        }
+    static func loadOrder(for frequency: HabitFrequency) -> [String] {
+        UserDefaults.standard.stringArray(forKey: key(for: frequency)) ?? []
+    }
+
+    static func saveOrder(_ names: [String], for frequency: HabitFrequency) {
+        UserDefaults.standard.set(names, forKey: key(for: frequency))
     }
 }

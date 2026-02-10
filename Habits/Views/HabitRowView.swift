@@ -5,13 +5,15 @@ struct HabitRowView: View {
     let dayColumns: [DayColumn]
     let completions: Set<Date>
     let completionCount: Int
+    var summaryDenominator: Int = 7
+    var showWeekSeparators: Bool = true
     let onToggle: (Date) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             // Summary + name label (160pt total)
             HStack(spacing: 6) {
-                Text("\(completionCount)/7")
+                Text("\(completionCount)/\(summaryDenominator)")
                     .font(.system(.caption, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .frame(width: 28, alignment: .trailing)
@@ -23,9 +25,9 @@ struct HabitRowView: View {
             }
             .frame(width: 160, alignment: .leading)
 
-            // Day cells with gaps between each week
+            // Day cells with conditional gaps between each week
             ForEach(Array(dayColumns.enumerated()), id: \.element.id) { index, column in
-                if index > 0, index % 7 == 0 {
+                if showWeekSeparators, index > 0, index % 7 == 0 {
                     Spacer().frame(width: 8)
                 }
 
