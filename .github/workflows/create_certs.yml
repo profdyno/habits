@@ -34,7 +34,15 @@ jobs:
           FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
         run: |
           bundle exec fastlane check_and_renew_certificates
-          RESULT=$(cat new_certificate_needed.txt)
+          # Fastlane may write from the project root
+          if [ -f new_certificate_needed.txt ]; then
+            RESULT=$(cat new_certificate_needed.txt)
+          elif [ -f fastlane/new_certificate_needed.txt ]; then
+            RESULT=$(cat fastlane/new_certificate_needed.txt)
+          else
+            echo "Certificate status file not found — assuming renewal needed"
+            RESULT="true"
+          fi
           echo "needs_renewal=$RESULT" >> "$GITHUB_OUTPUT"
           echo "Needs renewal: $RESULT"
 

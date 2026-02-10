@@ -177,8 +177,9 @@ platform :ios do
       end
     end
 
-    File.write("new_certificate_needed.txt", needs_renewal ? "true" : "false")
-    UI.message("Certificate renewal needed: #{needs_renewal}")
+    output_path = File.join(Dir.pwd, "new_certificate_needed.txt")
+    File.write(output_path, needs_renewal ? "true" : "false")
+    UI.message("Certificate renewal needed: #{needs_renewal} (wrote to #{output_path})")
   end
 
   # ──────────────────────────────────────────────
