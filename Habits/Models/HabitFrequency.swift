@@ -28,4 +28,13 @@ enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
         case .monthly: return 13
         }
     }
+
+    /// Rolling window for per-habit overall % calculation.
+    var rollingPeriodCount: Int {
+        switch self {
+        case .daily: return 14
+        case .weekly: return 13
+        case .monthly: return 12
+        }
+    }
 }

@@ -291,17 +291,22 @@ final class HabitsViewModel: ObservableObject {
         }
     }
 
-    /// Overall completion for a habit across all non-future columns: (completed, total).
+    /// Rolling window periods for per-habit stats (last 14 days / 13 weeks / 12 months).
+    private var rollingPeriods: Set<Date> {
+        Set(DateHelpers.lastPeriods(frequency: selectedFrequency, count: selectedFrequency.rollingPeriodCount))
+    }
+
+    /// Overall completion for a habit across the rolling window: (completed, total).
     func habitOverallCompletion(for habitName: String) -> (completed: Int, total: Int) {
-        let nonFutureColumns = dayColumns.filter { !$0.isFuture }
-        let total = nonFutureColumns.count
-        let completed = nonFutureColumns.filter { column in
-            completions[habitName]?.contains(column.id) == true
+        let periods = rollingPeriods
+        let total = periods.count
+        let completed = periods.filter { period in
+            completions[habitName]?.contains(period) == true
         }.count
         return (completed: completed, total: total)
     }
 
-    /// Overall percentage for a habit across all non-future columns.
+    /// Overall percentage for a habit across the rolling window.
     func habitOverallPercentage(for habitName: String) -> Double {
         let overall = habitOverallCompletion(for: habitName)
         return overall.total > 0 ? Double(overall.completed) / Double(overall.total) * 100.0 : 0.0
