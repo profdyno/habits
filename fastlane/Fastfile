@@ -242,13 +242,13 @@ platform :ios do
     new_build = current_build + 1
     UI.message("Build number: #{new_build}")
 
-    # Sync signing
+    # Sync signing — install certs and profiles into CI keychain
     match(
       type: "appstore",
       app_identifier: [APP_IDENTIFIER],
       api_key: api_key,
       git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
-      readonly: true
+      readonly: false
     )
 
     profile_name = ENV["sigh_#{APP_IDENTIFIER}_appstore_profile-name"]

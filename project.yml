@@ -17,7 +17,7 @@ settings:
 targets:
   Habits:
     type: application
-    platform: [iOS, macOS]
+    platform: iOS
     sources:
       - path: Habits
     settings:
@@ -25,6 +25,24 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.$(DEVELOPMENT_TEAM).habits.Habits
         INFOPLIST_KEY_NSRemindersFullAccessUsageDescription: "Habits uses Reminders to track your daily habit completions."
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        CODE_SIGN_ENTITLEMENTS: Habits.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+    entitlements:
+      path: Habits.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.personal-information.calendars: true
+
+  Habits-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: Habits
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.$(DEVELOPMENT_TEAM).habits.Habits
+        INFOPLIST_KEY_NSRemindersFullAccessUsageDescription: "Habits uses Reminders to track your daily habit completions."
         CODE_SIGN_ENTITLEMENTS: Habits.entitlements
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
