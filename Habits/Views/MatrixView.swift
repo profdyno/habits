@@ -10,8 +10,8 @@ struct MatrixView: View {
     }
 
     // Layout constants
-    private let labelWidth: CGFloat = 150
-    private let fractionWidth: CGFloat = 32
+    private let labelWidth: CGFloat = 160
+    private let fractionWidth: CGFloat = 36
     private let pctWidth: CGFloat = 30
 
     // Row height constants (must match between frozen labels and scrollable columns)
@@ -114,6 +114,7 @@ struct MatrixView: View {
                                 }
                             }
                         }
+                        .frame(width: labelWidth)
 
                         // MARK: - Scrollable columns
                         ScrollView(.horizontal, showsIndicators: false) {
