@@ -228,12 +228,17 @@ platform :ios do
       in_house: false
     )
 
-    # Get next build number
-    current_build = latest_testflight_build_number(
-      api_key: api_key,
-      app_identifier: APP_IDENTIFIER,
-      initial_build_number: 0
-    )
+    # Get next build number — app may not exist in ASC yet on first build
+    begin
+      current_build = latest_testflight_build_number(
+        api_key: api_key,
+        app_identifier: APP_IDENTIFIER,
+        initial_build_number: 0
+      )
+    rescue => e
+      UI.important("Could not fetch build number (app may not exist in App Store Connect yet): #{e.message.split("\n").first}")
+      current_build = 0
+    end
     new_build = current_build + 1
     UI.message("Build number: #{new_build}")
 
