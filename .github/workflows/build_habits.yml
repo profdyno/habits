@@ -80,7 +80,11 @@ jobs:
     if: needs.check-status.outputs.should_build == 'true'
     steps:
       - name: Select Xcode
-        run: sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer
+        run: |
+          # Use latest available Xcode
+          XCODE_PATH=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          echo "Using: $XCODE_PATH"
+          sudo xcode-select --switch "$XCODE_PATH/Contents/Developer"
 
       - name: Checkout
         uses: actions/checkout@v4

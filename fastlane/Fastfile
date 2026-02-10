@@ -283,6 +283,7 @@ platform :ios do
       output_name: "Habits.ipa",
       destination: "generic/platform=iOS",
       archive_path: "Habits.xcarchive",
+      xcargs: "COMPILER_INDEX_STORE_ENABLE=NO",
       export_options: {
         signingStyle: "manual",
         provisioningProfiles: {
