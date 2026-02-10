@@ -103,13 +103,34 @@ platform :ios do
       in_house: false
     )
 
-    match(
-      type: "appstore",
-      app_identifier: [APP_IDENTIFIER],
-      api_key: api_key,
-      git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
-      force_for_new_devices: false
-    )
+    begin
+      match(
+        type: "appstore",
+        app_identifier: [APP_IDENTIFIER],
+        api_key: api_key,
+        git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
+        force_for_new_devices: false
+      )
+    rescue => e
+      if e.message.include?("is not valid")
+        UI.important("Certificate expired — nuking and recreating...")
+        match_nuke(
+          type: "appstore",
+          api_key: api_key,
+          git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
+          skip_confirmation: true
+        )
+        match(
+          type: "appstore",
+          app_identifier: [APP_IDENTIFIER],
+          api_key: api_key,
+          git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
+          force_for_new_devices: false
+        )
+      else
+        raise e
+      end
+    end
   end
 
   # ──────────────────────────────────────────────
