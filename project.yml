@@ -20,25 +20,29 @@ targets:
     platform: iOS
     sources:
       - path: Habits
+    info:
+      properties:
+        NSRemindersFullAccessUsageDescription: "Habits uses Reminders to track your daily habit completions."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.$(DEVELOPMENT_TEAM).habits.Habits
-        INFOPLIST_KEY_NSRemindersFullAccessUsageDescription: "Habits uses Reminders to track your daily habit completions."
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
-        CODE_SIGN_ENTITLEMENTS: Habits.entitlements
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_SKIP_APP_STORE_DEPLOYMENT: NO
-        INFOPLIST_KEY_CFBundleIconName: AppIcon
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-    entitlements:
-      path: Habits.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.personal-information.calendars: true
+        GENERATE_INFOPLIST_FILE: NO
 
   Habits-macOS:
     type: application
