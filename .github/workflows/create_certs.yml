@@ -12,7 +12,7 @@ jobs:
 
   check-expiry:
     name: Check Certificate Expiry
-    runs-on: macos-15
+    runs-on: macos-26
     needs: validate
     outputs:
       needs_renewal: ${{ steps.check.outputs.needs_renewal }}
@@ -48,7 +48,7 @@ jobs:
 
   nuke-certs:
     name: Nuke and Recreate Certificates
-    runs-on: macos-15
+    runs-on: macos-26
     needs: check-expiry
     if: needs.check-expiry.outputs.needs_renewal == 'true'
     steps:
@@ -72,7 +72,7 @@ jobs:
 
   sync-certs:
     name: Sync Certificates
-    runs-on: macos-15
+    runs-on: macos-26
     needs: [check-expiry, nuke-certs]
     if: always() && needs.check-expiry.result == 'success' && (needs.nuke-certs.result == 'success' || needs.nuke-certs.result == 'skipped')
     steps:

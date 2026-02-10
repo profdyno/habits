@@ -75,14 +75,17 @@ jobs:
 
   build:
     name: Build and Upload
-    runs-on: macos-15
+    runs-on: macos-26
     needs: [check-status, check-certs]
     if: needs.check-status.outputs.should_build == 'true'
     steps:
       - name: Select Xcode
         run: |
-          # Use latest available Xcode
-          XCODE_PATH=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          # Use latest available Xcode 26
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE_PATH" ]; then
+            XCODE_PATH=$(ls -d /Applications/Xcode.app 2>/dev/null)
+          fi
           echo "Using: $XCODE_PATH"
           sudo xcode-select --switch "$XCODE_PATH/Contents/Developer"
 
