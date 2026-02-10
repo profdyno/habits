@@ -1,0 +1,136 @@
+name: "4. Build Habits"
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Sunday at 07:33 UTC — keeps TestFlight build from expiring (90 days)
+    - cron: "33 7 * * 0"
+
+jobs:
+  check-status:
+    name: Check Status
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.decide.outputs.should_build }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate GH_PAT
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          SCOPES=$(curl -sS -f -I -H "Authorization: token $GH_PAT" https://api.github.com | grep -i "x-oauth-scopes:" | cut -d' ' -f2- | tr -d '\r')
+          if [[ ! "$SCOPES" == *"repo"* ]] || [[ ! "$SCOPES" == *"workflow"* ]]; then
+            echo "::error::GH_PAT is missing required scopes"
+            exit 1
+          fi
+
+      - name: Sync fork with upstream
+        if: github.event_name == 'schedule'
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_sync_branch: main
+          target_repo_token: ${{ secrets.GH_PAT }}
+          upstream_sync_branch: main
+          upstream_sync_repo: ${{ github.repository }}
+          test_mode: false
+
+      - name: Decide whether to build
+        id: decide
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger — building."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # On schedule: check if it's the 2nd Sunday of the month
+          WEEK_OF_MONTH=$(date +%V)
+          DAY_OF_MONTH=$(date +%d)
+          if [ "$DAY_OF_MONTH" -ge 8 ] && [ "$DAY_OF_MONTH" -le 14 ]; then
+            echo "2nd Sunday of the month — building to prevent TestFlight expiry."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Check for new commits in the last week
+          RECENT_COMMITS=$(git log --oneline --since="7 days ago" | wc -l)
+          if [ "$RECENT_COMMITS" -gt 0 ]; then
+            echo "Found $RECENT_COMMITS new commit(s) — building."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new commits and not 2nd Sunday — skipping build."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  check-certs:
+    name: Check Certificates
+    needs: check-status
+    if: needs.check-status.outputs.should_build == 'true'
+    uses: ./.github/workflows/create_certs.yml
+    secrets: inherit
+
+  build:
+    name: Build and Upload
+    runs-on: macos-15
+    needs: [check-status, check-certs]
+    if: needs.check-status.outputs.should_build == 'true'
+    steps:
+      - name: Select Xcode
+        run: sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Patch Match table printer
+        run: |
+          # Prevent Match from printing sensitive certificate info in logs
+          TABLE_PRINTER=$(find "$(gem environment gemdir)" -name "table_printer.rb" -path "*/match/*" 2>/dev/null | head -1)
+          if [ -n "$TABLE_PRINTER" ]; then
+            sed -i '' '/puts(googled_table)/d' "$TABLE_PRINTER" 2>/dev/null || true
+            sed -i '' '/puts(Terminal::Table.new(params))/d' "$TABLE_PRINTER" 2>/dev/null || true
+          fi
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Sync clock
+        run: sudo sntp -sS time.apple.com || true
+
+      - name: Build app
+        env:
+          TEAMID: ${{ secrets.TEAMID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
+          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
+          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
+        run: bundle exec fastlane build_habits
+
+      - name: Upload to TestFlight
+        env:
+          TEAMID: ${{ secrets.TEAMID }}
+          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
+          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
+          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
+        run: bundle exec fastlane release
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            Habits.ipa
+            Habits.xcarchive/dSYMs/
+            fastlane/logs/
+          if-no-files-found: warn
