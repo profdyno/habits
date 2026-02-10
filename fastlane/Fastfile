@@ -86,8 +86,7 @@ platform :ios do
         name: "Habits",
         version_string: "1.0",
         sku: "com.habits.app.#{TEAMID}",
-        bundle_id: bundle_id.id,
-        platform: Spaceship::ConnectAPI::Platform::IOS
+        bundle_id: bundle_id.id
       )
       UI.success("Created app in App Store Connect.")
     else
