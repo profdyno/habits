@@ -42,9 +42,9 @@ platform :ios do
     )
     UI.success("Match-Secrets repository is accessible and decryptable.")
   rescue => e
-    # Match might fail if no certs exist yet — that's OK for validation
-    if e.message.include?("Could not find")
-      UI.important("Match-Secrets is accessible but no certificates exist yet. Run 'Create Certificates' workflow.")
+    # Match might fail if no certs exist yet or certs are expired — that's OK for validation
+    if e.message.include?("Could not find") || e.message.include?("is not valid")
+      UI.important("Match-Secrets is accessible. Certificates may need to be created or renewed — run 'Create Certificates' workflow.")
     else
       raise e
     end
