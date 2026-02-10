@@ -82,11 +82,15 @@ platform :ios do
     app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
     if app.nil?
       UI.message("Creating app in App Store Connect...")
-      app = Spaceship::ConnectAPI::App.create(
-        name: "Habits",
-        version_string: "1.0",
+      produce(
+        app_identifier: APP_IDENTIFIER,
+        app_name: "Habits",
         sku: "com.habits.app.#{TEAMID}",
-        bundle_id: bundle_id.id
+        language: "English",
+        app_version: "1.0",
+        api_key: api_key,
+        skip_itc: false,
+        skip_devcenter: true  # Already created the App ID above
       )
       UI.success("Created app in App Store Connect.")
     else
