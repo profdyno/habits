@@ -7,8 +7,8 @@ enum DateHelpers {
         return cal
     }
 
-    /// Returns 14 DayColumns: previous Monday through current Sunday.
-    static func computeDayColumns() -> [DayColumn] {
+    /// Returns DayColumns spanning `weeks` weeks (default 2), ending at the current Sunday.
+    static func computeDayColumns(weeks: Int = 2) -> [DayColumn] {
         let cal = calendar
         let today = cal.startOfDay(for: Date())
 
@@ -21,8 +21,8 @@ enum DateHelpers {
             return []
         }
 
-        // Previous Monday is 7 days before current Monday
-        guard let previousMonday = cal.date(byAdding: .day, value: -7, to: currentMonday) else {
+        // Start Monday is (weeks - 1) weeks before current Monday
+        guard let startMonday = cal.date(byAdding: .day, value: -(weeks - 1) * 7, to: currentMonday) else {
             return []
         }
 
@@ -32,9 +32,10 @@ enum DateHelpers {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "d"
 
+        let totalDays = weeks * 7
         var columns: [DayColumn] = []
-        for i in 0..<14 {
-            guard let date = cal.date(byAdding: .day, value: i, to: previousMonday) else { continue }
+        for i in 0..<totalDays {
+            guard let date = cal.date(byAdding: .day, value: i, to: startMonday) else { continue }
             let startOfDate = cal.startOfDay(for: date)
             columns.append(DayColumn(
                 id: startOfDate,

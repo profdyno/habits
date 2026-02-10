@@ -9,7 +9,7 @@ struct DayHeaderView: View {
             Color.clear.frame(width: 160, height: 1)
 
             ForEach(Array(dayColumns.enumerated()), id: \.element.id) { index, column in
-                if index == 7 {
+                if index > 0, index % 7 == 0 {
                     Spacer().frame(width: 8)
                 }
 

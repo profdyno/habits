@@ -24,8 +24,9 @@ final class HabitsViewModel: ObservableObject {
     // MARK: - Init
 
     init() {
+        let weeks = UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
         habits = HabitStore.loadHabits()
-        dayColumns = DateHelpers.computeDayColumns()
+        dayColumns = DateHelpers.computeDayColumns(weeks: weeks)
         listenForStoreChanges()
     }
 
@@ -145,7 +146,8 @@ final class HabitsViewModel: ObservableObject {
     // MARK: - Refresh Day Columns (midnight rollover)
 
     func refreshDayColumns() {
-        dayColumns = DateHelpers.computeDayColumns()
+        let weeks = UIDevice.current.userInterfaceIdiom == .pad ? 3 : 2
+        dayColumns = DateHelpers.computeDayColumns(weeks: weeks)
     }
 
     // MARK: - Store Change Listener

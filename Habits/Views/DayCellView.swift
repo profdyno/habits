@@ -10,6 +10,10 @@ struct DayCellView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(isCompleted ? Color.green.opacity(0.2) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isCompleted ? Color.clear : Color.gray.opacity(0.3), lineWidth: 1.5)
+                    )
                     .frame(width: 36, height: 36)
 
                 if isCompleted {
