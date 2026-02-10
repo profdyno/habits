@@ -107,7 +107,8 @@ platform :ios do
       app_identifier: [APP_IDENTIFIER],
       api_key: api_key,
       git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
-      force_for_new_devices: false
+      force_for_new_devices: false,
+      readonly: false
     )
   end
 
@@ -134,12 +135,13 @@ platform :ios do
       readonly: false
     )
 
-    # Recreate
+    # Recreate — must explicitly disable readonly since setup_ci enables it
     match(
       type: "appstore",
       app_identifier: [APP_IDENTIFIER],
       api_key: api_key,
-      git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}")
+      git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
+      readonly: false
     )
   end
 
