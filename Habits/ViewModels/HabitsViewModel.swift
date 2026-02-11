@@ -1,5 +1,10 @@
 import SwiftUI
 import Combine
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 @MainActor
 final class HabitsViewModel: ObservableObject {
@@ -16,6 +21,13 @@ final class HabitsViewModel: ObservableObject {
     // Comment flow state
     @Published var pendingCompletion: (habitName: String, date: Date)?
     @Published var commentText: String = ""
+
+    // Tasks state
+    @Published var availableLists: [ReminderListInfo] = []
+    @Published var selectedListIds: Set<String> = []
+    @Published var taskColumns: [TaskColumn] = []
+    @Published var tasksByColumn: [String: [TaskItem]] = [:]
+    @Published var showingListSelection = false
 
     enum PermissionStatus {
         case unknown, authorized, denied
@@ -71,10 +83,18 @@ final class HabitsViewModel: ObservableObject {
 
     func selectFrequency(_ frequency: HabitFrequency) {
         selectedFrequency = frequency
-        dayColumns = computeColumnsForFrequency(frequency)
-        Task {
-            await loadHabitsFromReminders()
-            await loadCompletions()
+        if frequency == .tasks {
+            taskColumns = DateHelpers.computeTaskColumns()
+            Task {
+                await loadAvailableLists()
+                await loadTasks()
+            }
+        } else {
+            dayColumns = computeColumnsForFrequency(frequency)
+            Task {
+                await loadHabitsFromReminders()
+                await loadCompletions()
+            }
         }
     }
 
@@ -86,6 +106,8 @@ final class HabitsViewModel: ObservableObject {
             return DateHelpers.computeWeekColumns(count: 14)
         case .monthly:
             return DateHelpers.computeMonthColumns(count: 13)
+        case .tasks:
+            return [] // Tasks use taskColumns instead
         }
     }
 
@@ -270,6 +292,117 @@ final class HabitsViewModel: ObservableObject {
         HabitStore.saveOrder(filtered.map(\.name), for: selectedFrequency)
     }
 
+    // MARK: - Tasks
+
+    func loadAvailableLists() async {
+        availableLists = await eventKitService.fetchAllReminderLists()
+        let stored = Set(TasksStore.loadSelectedListIds())
+        if stored.isEmpty {
+            selectedListIds = []
+        } else {
+            // Only keep IDs that still exist
+            selectedListIds = stored.intersection(Set(availableLists.map { $0.id }))
+        }
+    }
+
+    func toggleListSelection(_ listId: String) {
+        if selectedListIds.contains(listId) {
+            selectedListIds.remove(listId)
+        } else {
+            selectedListIds.insert(listId)
+        }
+        TasksStore.saveSelectedListIds(Array(selectedListIds))
+        Task { await loadTasks() }
+    }
+
+    func loadTasks() async {
+        guard !selectedListIds.isEmpty else {
+            tasksByColumn = [:]
+            return
+        }
+
+        let calendarIds = Array(selectedListIds)
+        var result: [String: [TaskItem]] = [:]
+
+        for column in taskColumns {
+            if column.isDelinquent {
+                // Delinquent: overdue tasks before start of this week's Monday
+                guard let mondayColumn = taskColumns.first(where: { $0.startDate != nil }),
+                      let mondayStart = mondayColumn.startDate else { continue }
+                let tasks = try? await eventKitService.fetchDelinquentTasks(
+                    calendarIds: calendarIds,
+                    before: mondayStart
+                )
+                result[column.id] = tasks ?? []
+            } else if let startDate = column.startDate, let endDate = column.endDate {
+                let incomplete = try? await eventKitService.fetchIncompleteTasks(
+                    calendarIds: calendarIds,
+                    startDate: startDate,
+                    endDate: endDate
+                )
+                let completed = try? await eventKitService.fetchCompletedTasks(
+                    calendarIds: calendarIds,
+                    startDate: startDate,
+                    endDate: endDate
+                )
+                result[column.id] = (incomplete ?? []) + (completed ?? [])
+            }
+        }
+
+        tasksByColumn = result
+    }
+
+    func toggleTaskCompletion(_ task: TaskItem) {
+        let newCompleted = !task.isCompleted
+
+        // Optimistic update
+        for (columnId, tasks) in tasksByColumn {
+            if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+                tasksByColumn[columnId]?[index] = TaskItem(
+                    id: task.id,
+                    title: task.title,
+                    dueDate: task.dueDate,
+                    isCompleted: newCompleted,
+                    listName: task.listName
+                )
+                break
+            }
+        }
+
+        Task {
+            do {
+                try await eventKitService.setTaskCompleted(task.id, completed: newCompleted)
+            } catch {
+                // Revert on failure
+                await loadTasks()
+            }
+        }
+    }
+
+    func taskColumnSummary(for column: TaskColumn) -> (completed: Int, total: Int) {
+        let tasks = tasksByColumn[column.id] ?? []
+        let completed = tasks.filter(\.isCompleted).count
+        return (completed: completed, total: tasks.count)
+    }
+
+    func openTaskInReminders(_ task: TaskItem) {
+        let urlString = "x-apple-reminderkit://REMCDReminder/\(task.id)"
+        openURL(urlString)
+    }
+
+    func openDelinquentInReminders() {
+        openURL("x-apple-reminderkit://")
+    }
+
+    private func openURL(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        #if os(iOS)
+        UIApplication.shared.open(url)
+        #elseif os(macOS)
+        NSWorkspace.shared.open(url)
+        #endif
+    }
+
     // MARK: - Summary / Statistics
 
     /// Per-column completion counts: (completed habits, total habits) for each column.
@@ -315,14 +448,22 @@ final class HabitsViewModel: ObservableObject {
     // MARK: - Refresh
 
     func refreshDayColumns() {
-        dayColumns = computeColumnsForFrequency(selectedFrequency)
+        if selectedFrequency == .tasks {
+            taskColumns = DateHelpers.computeTaskColumns()
+        } else {
+            dayColumns = computeColumnsForFrequency(selectedFrequency)
+        }
     }
 
     /// Full refresh from Reminders — call when app returns to foreground.
     func refreshFromReminders() async {
         guard permissionStatus == .authorized else { return }
-        await loadHabitsFromReminders()
-        await loadCompletions()
+        if selectedFrequency == .tasks {
+            await loadTasks()
+        } else {
+            await loadHabitsFromReminders()
+            await loadCompletions()
+        }
     }
 
     // MARK: - Store Change Listener
@@ -333,8 +474,13 @@ final class HabitsViewModel: ObservableObject {
             .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    await self?.loadHabitsFromReminders()
-                    await self?.loadCompletions()
+                    guard let self else { return }
+                    if self.selectedFrequency == .tasks {
+                        await self.loadTasks()
+                    } else {
+                        await self.loadHabitsFromReminders()
+                        await self.loadCompletions()
+                    }
                 }
             }
     }

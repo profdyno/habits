@@ -119,7 +119,7 @@ enum DateHelpers {
     static func periodStart(for date: Date, frequency: HabitFrequency) -> Date {
         let cal = calendar
         switch frequency {
-        case .daily:
+        case .daily, .tasks:
             return cal.startOfDay(for: date)
         case .weekly:
             let weekday = cal.component(.weekday, from: date)
@@ -144,7 +144,7 @@ enum DateHelpers {
 
         return (0..<count).compactMap { offset in
             switch frequency {
-            case .daily:
+            case .daily, .tasks:
                 return cal.date(byAdding: .day, value: -(count - 1 - offset), to: currentPeriod)
             case .weekly:
                 return cal.date(byAdding: .weekOfYear, value: -(count - 1 - offset), to: currentPeriod)
@@ -166,5 +166,74 @@ enum DateHelpers {
     /// Normalizes a date to start-of-day for use as a key.
     static func startOfDay(_ date: Date) -> Date {
         calendar.startOfDay(for: date)
+    }
+
+    /// Returns 7 TaskColumns for the tasks view: Delinquent + Mon–Fri + Weekend.
+    static func computeTaskColumns() -> [TaskColumn] {
+        let cal = calendar
+        let today = cal.startOfDay(for: Date())
+
+        // Find Monday of the current week
+        let currentWeekday = cal.component(.weekday, from: today)
+        let daysSinceMonday = (currentWeekday - 2 + 7) % 7
+        guard let monday = cal.date(byAdding: .day, value: -daysSinceMonday, to: today) else {
+            return []
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+
+        let dayNameFormatter = DateFormatter()
+        dayNameFormatter.dateFormat = "EEE"
+
+        var columns: [TaskColumn] = []
+
+        // Column 0: Delinquent
+        columns.append(TaskColumn(
+            id: "delinquent",
+            startDate: nil,
+            endDate: nil,
+            label: "Delinquent",
+            dayLabel: "Late",
+            isToday: false,
+            isDelinquent: true
+        ))
+
+        // Columns 1–5: Monday through Friday
+        for i in 0..<5 {
+            guard let date = cal.date(byAdding: .day, value: i, to: monday) else { continue }
+            let startOfDate = cal.startOfDay(for: date)
+            columns.append(TaskColumn(
+                id: dayNameFormatter.string(from: date).lowercased(),
+                startDate: startOfDate,
+                endDate: startOfDate,
+                label: dateFormatter.string(from: date),
+                dayLabel: dayNameFormatter.string(from: date),
+                isToday: cal.isDate(date, inSameDayAs: today),
+                isDelinquent: false
+            ))
+        }
+
+        // Column 6: Weekend (Saturday + Sunday)
+        guard let saturday = cal.date(byAdding: .day, value: 5, to: monday),
+              let sunday = cal.date(byAdding: .day, value: 6, to: monday) else {
+            return columns
+        }
+        let satStart = cal.startOfDay(for: saturday)
+        let sunStart = cal.startOfDay(for: sunday)
+        let satLabel = dateFormatter.string(from: saturday)
+        let sunDay = cal.component(.day, from: sunday)
+        let isWeekendToday = cal.isDate(today, inSameDayAs: saturday) || cal.isDate(today, inSameDayAs: sunday)
+        columns.append(TaskColumn(
+            id: "weekend",
+            startDate: satStart,
+            endDate: sunStart,
+            label: "\(satLabel)-\(sunDay)",
+            dayLabel: "Sat/Sun",
+            isToday: isWeekendToday,
+            isDelinquent: false
+        ))
+
+        return columns
     }
 }

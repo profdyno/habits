@@ -37,7 +37,9 @@ struct MatrixView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
 
-                if viewModel.filteredHabits.isEmpty {
+                if viewModel.selectedFrequency == .tasks {
+                    TasksView()
+                } else if viewModel.filteredHabits.isEmpty {
                     ContentUnavailableView(
                         "No Habits Yet",
                         systemImage: "list.bullet.clipboard",
@@ -174,10 +176,18 @@ struct MatrixView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingManagement = true
-                    } label: {
-                        Image(systemName: "plus")
+                    if viewModel.selectedFrequency == .tasks {
+                        Button {
+                            viewModel.showingListSelection = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                    } else {
+                        Button {
+                            showingManagement = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
@@ -189,6 +199,9 @@ struct MatrixView: View {
             }
             .sheet(isPresented: $showingManagement) {
                 HabitManagementView()
+            }
+            .sheet(isPresented: $viewModel.showingListSelection) {
+                TasksListSelectionView()
             }
             .alert(
                 "Comment",

@@ -227,6 +227,141 @@ actor EventKitService {
         }
     }
 
+    // MARK: - Task Lists
+
+    /// All reminder calendars for the list picker.
+    func fetchAllReminderLists() -> [ReminderListInfo] {
+        store.calendars(for: .reminder).map { ReminderListInfo(id: $0.calendarIdentifier, title: $0.title) }
+    }
+
+    // MARK: - Fetch Tasks
+
+    /// Incomplete tasks from given calendars with due dates in range.
+    func fetchIncompleteTasks(
+        calendarIds: [String],
+        startDate: Date,
+        endDate: Date
+    ) async throws -> [TaskItem] {
+        let allCalendars = store.calendars(for: .reminder)
+        let selected = allCalendars.filter { calendarIds.contains($0.calendarIdentifier) }
+        guard !selected.isEmpty else { return [] }
+
+        let predicate = store.predicateForReminders(in: selected)
+        let reminders = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[EKReminder], Error>) in
+            store.fetchReminders(matching: predicate) { result in
+                continuation.resume(returning: result ?? [])
+            }
+        }
+
+        let cal = Calendar.current
+        let startDay = cal.startOfDay(for: startDate)
+        let endDay = cal.startOfDay(for: endDate)
+
+        return reminders.compactMap { reminder in
+            guard !reminder.isCompleted,
+                  let title = reminder.title, !title.isEmpty else { return nil }
+
+            // Filter by due date in range
+            guard let dueDateComponents = reminder.dueDateComponents,
+                  let dueDate = cal.date(from: dueDateComponents) else { return nil }
+            let dueDay = cal.startOfDay(for: dueDate)
+            guard dueDay >= startDay && dueDay <= endDay else { return nil }
+
+            return TaskItem(
+                id: reminder.calendarItemIdentifier,
+                title: title,
+                dueDate: dueDate,
+                isCompleted: false,
+                listName: reminder.calendar?.title ?? ""
+            )
+        }
+    }
+
+    /// Incomplete tasks with due dates before the given date (delinquent/overdue).
+    func fetchDelinquentTasks(calendarIds: [String], before: Date) async throws -> [TaskItem] {
+        let allCalendars = store.calendars(for: .reminder)
+        let selected = allCalendars.filter { calendarIds.contains($0.calendarIdentifier) }
+        guard !selected.isEmpty else { return [] }
+
+        let predicate = store.predicateForReminders(in: selected)
+        let reminders = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[EKReminder], Error>) in
+            store.fetchReminders(matching: predicate) { result in
+                continuation.resume(returning: result ?? [])
+            }
+        }
+
+        let cal = Calendar.current
+        let beforeDay = cal.startOfDay(for: before)
+
+        return reminders.compactMap { reminder in
+            guard !reminder.isCompleted,
+                  let title = reminder.title, !title.isEmpty else { return nil }
+
+            guard let dueDateComponents = reminder.dueDateComponents,
+                  let dueDate = cal.date(from: dueDateComponents) else { return nil }
+            let dueDay = cal.startOfDay(for: dueDate)
+            guard dueDay < beforeDay else { return nil }
+
+            return TaskItem(
+                id: reminder.calendarItemIdentifier,
+                title: title,
+                dueDate: dueDate,
+                isCompleted: false,
+                listName: reminder.calendar?.title ?? ""
+            )
+        }
+    }
+
+    /// Completed tasks from given calendars with completion dates in range.
+    func fetchCompletedTasks(
+        calendarIds: [String],
+        startDate: Date,
+        endDate: Date
+    ) async throws -> [TaskItem] {
+        let allCalendars = store.calendars(for: .reminder)
+        let selected = allCalendars.filter { calendarIds.contains($0.calendarIdentifier) }
+        guard !selected.isEmpty else { return [] }
+
+        let cal = Calendar.current
+        let endPlusOne = cal.date(byAdding: .day, value: 1, to: endDate)!
+        let predicate = store.predicateForCompletedReminders(
+            withCompletionDateStarting: startDate,
+            ending: endPlusOne,
+            calendars: selected
+        )
+
+        let reminders = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[EKReminder], Error>) in
+            store.fetchReminders(matching: predicate) { result in
+                continuation.resume(returning: result ?? [])
+            }
+        }
+
+        return reminders.compactMap { reminder in
+            guard let title = reminder.title, !title.isEmpty else { return nil }
+
+            return TaskItem(
+                id: reminder.calendarItemIdentifier,
+                title: title,
+                dueDate: reminder.completionDate,
+                isCompleted: true,
+                listName: reminder.calendar?.title ?? ""
+            )
+        }
+    }
+
+    // MARK: - Toggle Task Completion
+
+    func setTaskCompleted(_ identifier: String, completed: Bool) async throws {
+        guard let item = store.calendarItem(withIdentifier: identifier) as? EKReminder else {
+            return
+        }
+        item.isCompleted = completed
+        if completed {
+            item.completionDate = Date()
+        }
+        try store.save(item, commit: true)
+    }
+
     // MARK: - Store Changed Notification
 
     nonisolated var storeChangedNotificationName: Notification.Name {
