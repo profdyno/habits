@@ -1,16 +1,16 @@
 import Foundation
 
 enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
-    case daily, weekly, monthly, tasks
+    case tasks, daily, weekly, monthly
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .daily: return "Daily"
-        case .weekly: return "Weekly"
-        case .monthly: return "Monthly"
         case .tasks: return "Tasks"
+        case .daily: return "Habits-Daily"
+        case .weekly: return "Habits-Weekly"
+        case .monthly: return "Habits-Quarterly"
         }
     }
 

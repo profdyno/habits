@@ -16,7 +16,7 @@ final class HabitsViewModel: ObservableObject {
     @Published var dayColumns: [DayColumn] = []
     @Published var permissionStatus: PermissionStatus = .unknown
     @Published var isLoading = false
-    @Published var selectedFrequency: HabitFrequency = .daily
+    @Published var selectedFrequency: HabitFrequency = .tasks
 
     // Comment flow state
     @Published var pendingCompletion: (habitName: String, date: Date)?
@@ -48,7 +48,7 @@ final class HabitsViewModel: ObservableObject {
     // MARK: - Init
 
     init() {
-        dayColumns = computeColumnsForFrequency(.daily)
+        taskColumns = DateHelpers.computeTaskColumns()
         listenForStoreChanges()
         startPeriodicRefresh()
     }
@@ -60,8 +60,7 @@ final class HabitsViewModel: ObservableObject {
         switch current {
         case .authorized:
             permissionStatus = .authorized
-            await loadHabitsFromReminders()
-            await loadCompletions()
+            await loadInitialData()
         case .denied:
             permissionStatus = .denied
         case .unknown:
@@ -69,13 +68,22 @@ final class HabitsViewModel: ObservableObject {
             switch result {
             case .authorized:
                 permissionStatus = .authorized
-                await loadHabitsFromReminders()
-                await loadCompletions()
+                await loadInitialData()
             case .denied:
                 permissionStatus = .denied
             case .unknown:
                 permissionStatus = .unknown
             }
+        }
+    }
+
+    private func loadInitialData() async {
+        if selectedFrequency == .tasks {
+            await loadAvailableLists()
+            await loadTasks()
+        } else {
+            await loadHabitsFromReminders()
+            await loadCompletions()
         }
     }
 

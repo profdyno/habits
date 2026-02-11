@@ -10,7 +10,7 @@ struct MatrixView: View {
     }
 
     // Layout constants
-    private let labelWidth: CGFloat = 160
+    private let labelWidth: CGFloat = 240
     private let fractionWidth: CGFloat = 36
     private let pctWidth: CGFloat = 30
 
