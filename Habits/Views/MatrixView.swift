@@ -39,6 +39,8 @@ struct MatrixView: View {
 
                 if viewModel.selectedFrequency == .tasks {
                     TasksView()
+                } else if viewModel.selectedFrequency == .notes {
+                    NotesView()
                 } else if viewModel.filteredHabits.isEmpty {
                     ContentUnavailableView(
                         "No Habits Yet",
@@ -175,18 +177,20 @@ struct MatrixView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    if viewModel.selectedFrequency == .tasks {
-                        Button {
-                            viewModel.showingListSelection = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
-                    } else {
-                        Button {
-                            showingManagement = true
-                        } label: {
-                            Image(systemName: "plus")
+                if viewModel.selectedFrequency != .notes {
+                    ToolbarItem(placement: .primaryAction) {
+                        if viewModel.selectedFrequency == .tasks {
+                            Button {
+                                viewModel.showingListSelection = true
+                            } label: {
+                                Image(systemName: "gearshape")
+                            }
+                        } else {
+                            Button {
+                                showingManagement = true
+                            } label: {
+                                Image(systemName: "plus")
+                            }
                         }
                     }
                 }

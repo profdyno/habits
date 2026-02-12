@@ -29,6 +29,10 @@ final class HabitsViewModel: ObservableObject {
     @Published var tasksByColumn: [String: [TaskItem]] = [:]
     @Published var showingListSelection = false
 
+    // Notes state
+    @Published var noteText: String = ""
+    @Published var noteKey: String = ""
+
     enum PermissionStatus {
         case unknown, authorized, denied
     }
@@ -81,6 +85,8 @@ final class HabitsViewModel: ObservableObject {
         if selectedFrequency == .tasks {
             await loadAvailableLists()
             await loadTasks()
+        } else if selectedFrequency == .notes {
+            loadNote()
         } else {
             await loadHabitsFromReminders()
             await loadCompletions()
@@ -97,6 +103,8 @@ final class HabitsViewModel: ObservableObject {
                 await loadAvailableLists()
                 await loadTasks()
             }
+        } else if frequency == .notes {
+            loadNote()
         } else {
             dayColumns = computeColumnsForFrequency(frequency)
             Task {
@@ -114,8 +122,8 @@ final class HabitsViewModel: ObservableObject {
             return DateHelpers.computeWeekColumns(count: 14)
         case .monthly:
             return DateHelpers.computeMonthColumns(count: 13)
-        case .tasks:
-            return [] // Tasks use taskColumns instead
+        case .tasks, .notes:
+            return []
         }
     }
 
@@ -411,6 +419,18 @@ final class HabitsViewModel: ObservableObject {
         #endif
     }
 
+    // MARK: - Notes
+
+    func loadNote() {
+        noteKey = NoteStore.todayKey()
+        noteText = NoteStore.load(key: noteKey)
+    }
+
+    func saveNote() {
+        guard !noteKey.isEmpty else { return }
+        NoteStore.save(key: noteKey, content: noteText)
+    }
+
     // MARK: - Summary / Statistics
 
     /// Per-column completion counts: (completed habits, total habits) for each column.
@@ -458,6 +478,8 @@ final class HabitsViewModel: ObservableObject {
     func refreshDayColumns() {
         if selectedFrequency == .tasks {
             taskColumns = DateHelpers.computeTaskColumns()
+        } else if selectedFrequency == .notes {
+            // Notes don't use day columns
         } else {
             dayColumns = computeColumnsForFrequency(selectedFrequency)
         }
@@ -468,6 +490,8 @@ final class HabitsViewModel: ObservableObject {
         guard permissionStatus == .authorized else { return }
         if selectedFrequency == .tasks {
             await loadTasks()
+        } else if selectedFrequency == .notes {
+            // Notes don't use Reminders
         } else {
             await loadHabitsFromReminders()
             await loadCompletions()
@@ -485,6 +509,8 @@ final class HabitsViewModel: ObservableObject {
                     guard let self else { return }
                     if self.selectedFrequency == .tasks {
                         await self.loadTasks()
+                    } else if self.selectedFrequency == .notes {
+                        // Notes don't use Reminders
                     } else {
                         await self.loadHabitsFromReminders()
                         await self.loadCompletions()

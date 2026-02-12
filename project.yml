@@ -45,6 +45,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_SKIP_APP_STORE_DEPLOYMENT: NO
         GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Habits.entitlements
 
   Habits-macOS:
     type: application

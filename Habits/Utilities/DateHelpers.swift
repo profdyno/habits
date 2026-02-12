@@ -119,7 +119,7 @@ enum DateHelpers {
     static func periodStart(for date: Date, frequency: HabitFrequency) -> Date {
         let cal = calendar
         switch frequency {
-        case .daily, .tasks:
+        case .daily, .tasks, .notes:
             return cal.startOfDay(for: date)
         case .weekly:
             let weekday = cal.component(.weekday, from: date)
@@ -144,7 +144,7 @@ enum DateHelpers {
 
         return (0..<count).compactMap { offset in
             switch frequency {
-            case .daily, .tasks:
+            case .daily, .tasks, .notes:
                 return cal.date(byAdding: .day, value: -(count - 1 - offset), to: currentPeriod)
             case .weekly:
                 return cal.date(byAdding: .weekOfYear, value: -(count - 1 - offset), to: currentPeriod)

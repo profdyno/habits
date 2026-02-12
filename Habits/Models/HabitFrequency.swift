@@ -1,7 +1,7 @@
 import Foundation
 
 enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
-    case tasks, daily, weekly, monthly
+    case tasks, daily, weekly, monthly, notes
 
     var id: String { rawValue }
 
@@ -11,6 +11,7 @@ enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
         case .daily: return "Habits-Daily"
         case .weekly: return "Habits-Weekly"
         case .monthly: return "Habits-Quarterly"
+        case .notes: return "Notes"
         }
     }
 
@@ -19,7 +20,7 @@ enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
         case .daily: return "Habits-Daily"
         case .weekly: return "Habits-Weekly"
         case .monthly: return "Habits-Monthly"
-        case .tasks: return ""
+        case .tasks, .notes: return ""
         }
     }
 
@@ -29,6 +30,7 @@ enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
         case .weekly: return 14
         case .monthly: return 13
         case .tasks: return 7
+        case .notes: return 0
         }
     }
 
@@ -39,6 +41,7 @@ enum HabitFrequency: String, Codable, CaseIterable, Identifiable {
         case .weekly: return 13
         case .monthly: return 12
         case .tasks: return 7
+        case .notes: return 0
         }
     }
 }
