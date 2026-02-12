@@ -64,3 +64,5 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.personal-information.calendars: true
+        com.apple.developer.ubiquity-container-identifiers:
+          - iCloud.$(CFBundleIdentifier)
