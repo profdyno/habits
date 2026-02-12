@@ -263,8 +263,7 @@ platform :ios do
       app_identifier: [APP_IDENTIFIER],
       api_key: api_key,
       git_basic_authorization: Base64.strict_encode64("#{GITHUB_REPOSITORY_OWNER}:#{GH_PAT}"),
-      readonly: false,
-      force: true
+      readonly: false
     )
 
     profile_name = ENV["sigh_#{APP_IDENTIFIER}_appstore_profile-name"]
