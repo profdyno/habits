@@ -180,10 +180,17 @@ struct MatrixView: View {
                 if viewModel.selectedFrequency != .notes {
                     ToolbarItem(placement: .primaryAction) {
                         if viewModel.selectedFrequency == .tasks {
-                            Button {
-                                viewModel.showingListSelection = true
-                            } label: {
-                                Image(systemName: "gearshape")
+                            HStack(spacing: 12) {
+                                Button {
+                                    viewModel.showingAddTask = true
+                                } label: {
+                                    Image(systemName: "plus")
+                                }
+                                Button {
+                                    viewModel.showingListSelection = true
+                                } label: {
+                                    Image(systemName: "gearshape")
+                                }
                             }
                         } else {
                             Button {
@@ -206,6 +213,9 @@ struct MatrixView: View {
             }
             .sheet(isPresented: $viewModel.showingListSelection) {
                 TasksListSelectionView()
+            }
+            .sheet(isPresented: $viewModel.showingAddTask) {
+                AddTaskView()
             }
             .alert(
                 "Comment",

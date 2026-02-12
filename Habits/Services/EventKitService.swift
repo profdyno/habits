@@ -362,6 +362,29 @@ actor EventKitService {
         try store.save(item, commit: true)
     }
 
+    // MARK: - Create Task
+
+    func createTask(title: String, dueDate: Date, calendarId: String) throws {
+        let allCalendars = store.calendars(for: .reminder)
+        guard let calendar = allCalendars.first(where: { $0.calendarIdentifier == calendarId }) else {
+            return
+        }
+
+        let reminder = EKReminder(eventStore: store)
+        reminder.title = title
+        reminder.calendar = calendar
+        reminder.isCompleted = false
+
+        let cal = Calendar.current
+        var components = cal.dateComponents([.year, .month, .day], from: dueDate)
+        let now = Date()
+        components.hour = cal.component(.hour, from: now)
+        components.minute = cal.component(.minute, from: now)
+        reminder.dueDateComponents = components
+
+        try store.save(reminder, commit: true)
+    }
+
     // MARK: - Store Changed Notification
 
     nonisolated var storeChangedNotificationName: Notification.Name {

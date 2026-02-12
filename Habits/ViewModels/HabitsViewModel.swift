@@ -28,6 +28,7 @@ final class HabitsViewModel: ObservableObject {
     @Published var taskColumns: [TaskColumn] = []
     @Published var tasksByColumn: [String: [TaskItem]] = [:]
     @Published var showingListSelection = false
+    @Published var showingAddTask = false
 
     // Notes state
     @Published var noteText: String = ""
@@ -366,6 +367,22 @@ final class HabitsViewModel: ObservableObject {
         }
 
         tasksByColumn = result
+    }
+
+    func addTask(title: String, dueDate: Date, calendarId: String) {
+        Task {
+            do {
+                try await eventKitService.createTask(title: title, dueDate: dueDate, calendarId: calendarId)
+                // Auto-select the target list if not already selected
+                if !selectedListIds.contains(calendarId) {
+                    selectedListIds.insert(calendarId)
+                    TasksStore.saveSelectedListIds(Array(selectedListIds))
+                }
+                await loadTasks()
+            } catch {
+                // Silently fail — EKEventStoreChanged will eventually refresh
+            }
+        }
     }
 
     func toggleTaskCompletion(_ task: TaskItem) {
